@@ -62,7 +62,7 @@ export default class Status extends React.Component {
     });
 
     // for testing
-    setTimeout(() => this.handleChange(false), 3000);
+    //setTimeout(() => this.handleChange(false), 3000);
   }
 
   handleChange=(isConnected)=>{
