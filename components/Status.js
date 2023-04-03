@@ -1,31 +1,99 @@
 import Constants from 'expo-constants';
-import { StatusBar, StyleSheet, View } from 'react-native';
+import {
+  StatusBar,
+  StyleSheet,
+  Text,
+  View
+} from 'react-native';
+
 import React from 'react';
+
+import NetInfo from '@react-native-community/netinfo';
 
 export default class Status extends React.Component {
   state = {
-    isConnected: false,
+    isConnected: true,
   };
 // ...
 
   render() {
     const { isConnected } = this.state;
+
     const backgroundColor = isConnected ? 'white' : 'red';
+
     const statusBar = (
       <StatusBar
         backgroundColor={backgroundColor}
-        barStyle={isConnected ? 'dark-content' : 'light-content'} animated={false}
+        barStyle={isConnected ? 'dark-content' : 'light-content'}
+        animated={false}
       />
+    );
+
+    const messageContainer = (
+      <View style={styles.messageContainer} pointerEvents={'none'}>
+        {statusBar}
+        {!isConnected && (
+          <View style={styles.bubble}>
+            <Text style={styles.text}>No network connection</Text>
+          </View>
+        )}
+      </View>
     );
 
     if (Platform.OS === 'ios') {
       return (
         <View style={[styles.status, { backgroundColor }]}>
+          {messageContainer}
         </View>
       );
     }
-    return null; // Temporary! }
+    return messageContainer;
   }
+
+  async componentDidMount(){
+    this.unsubscribe = NetInfo.addEventListener(
+      newState => {
+        this.setState({ isConnected:newState.isConnected })
+      }
+    );
+
+    NetInfo.fetch().then(newState =>{
+      this.handleChange(newState.isConnected);
+    });
+
+    // for testing
+    setTimeout(() => this.handleChange(false), 3000);
+  }
+
+  handleChange=(isConnected)=>{
+    this.setState({ isConnected });
+    StatusBar.setBarStyle(
+      isConnected ? 'light-content' : 'dark-content'
+    );
+  };
+
+  componentWillUnmount(){
+    this.unsubscribe();
+  }
+
+/*
+async  componentWillUnmount(){
+     NetInfo.isConnected.removeEventListener(
+      'connectionChange',
+      this.handleChange,
+    );
+
+    // for testing
+    setTimeout(() => this.handleChange(false), 3000);
+  }
+
+  handleChange=(isConnected)=>{
+    this.setState({ isConnected });
+    StatusBar.setBarStyle(
+      isConnected ? 'light-content' : 'dark-content'
+    );
+  };
+*/
 }
 
 const statusHeight =
@@ -36,5 +104,20 @@ const styles = StyleSheet.create({
     zIndex: 1,
     height: statusHeight,
   },
-// ...
+  messageContainer: {
+    zIndex: 1,
+    position: 'absolute',
+    top: statusHeight + 20,
+    right: 0,
+    left: 0,
+    height: 80,
+    alignItems: 'center',
+  }, bubble: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: 'red',
+  }, text: {
+    color: 'white',
+  },
 });
