@@ -56,9 +56,9 @@ export default class Toolbar extends React.Component {
     this.input = ref;
   };
 
-  componentWillReceiveProps(nextProps) {
-    if (nextProps.isFocused !== this.props.isFocused) {
-      if (nextProps.isFocused) {
+  componentDidUpdate(prevProps) {
+    if (this.props.isFocused !== prevProps.isFocused) {
+      if (this.props.isFocused) {
         this.input.focus();
       } else {
         this.input.blur();

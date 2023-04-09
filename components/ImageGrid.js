@@ -1,11 +1,10 @@
 import {
-  CameraRoll,
   Image,
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
 
-import { Permissions } from 'expo';
+import CameraRoll from 'expo-cameraroll';
 
 import PropTypes from 'prop-types';
 
@@ -16,6 +15,9 @@ import Grid from './Grid';
 const keyExtractor = ({ uri }) => uri;
 
 export default class ImageGrid extends React.Component {
+  loading = false;
+  cursor = null;
+
   static propTypes = {
     onPressImage: PropTypes.func,
   };
@@ -25,15 +27,49 @@ export default class ImageGrid extends React.Component {
   };
 
   state = {
-    images: [
-      { uri: 'https://picsum.photos/600/600?image=10' },
-      { uri: 'https://picsum.photos/600/600?image=20' },
-      { uri: 'https://picsum.photos/600/600?image=30' },
-      { uri: 'https://picsum.photos/600/600?image=40' },
-    ],
+    images: [],
+  };
+
+  componentDidMount() {
+    this.getImages();
+  }
+
+  getNextImages = () => {
+    if (!this.cursor) return;
+    this.getImages(this.cursor);
+  };
+
+  getImages = async (after) => {
+    if (this.loading) return;
+
+    this.loading = true;
+
+    const results = await CameraRoll.getPhotos({
+      first: 20,
+      after,
+      assetType: 'Photos',
+    });
+
+    const {
+      edges,
+      page_info: {has_next_page, end_cursor},
+     } = results;
+
+    const loadedImages = edges.map(item => item.node.image);
+
+    this.setState(
+      {
+        images: this.state.images.concat(loadedImages),
+      },
+      () => {
+        this.loading = false;
+        this.cursor = has_next_page ? end_cursor : null;
+      },
+    );
   };
 
   renderItem = ({ item: { uri }, size, marginTop, marginLeft }) => {
+    const { onPressImage } = this.props;
     const style = {
       width: size,
       height: size,
@@ -42,7 +78,14 @@ export default class ImageGrid extends React.Component {
     };
 
     return (
-      <Image source={{ uri }} style={style} />
+      <TouchableOpacity
+        key={uri}
+        activeOpacity={0.75}
+        onPress={() => onPressImage(uri)}
+        style={style}
+      >
+        <Image source={{ uri }} style={style} />
+      </TouchableOpacity>
     );
   };
 
