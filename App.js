@@ -9,6 +9,8 @@ import {
 
 import React from 'react';
 
+import * as Location from 'expo-location';
+
 import Status from './components/Status';
 import MessageList from './components/MessageList';
 import {
@@ -16,8 +18,8 @@ import {
   createLocationMessage,
   createTextMessage,
 } from './utils/MessageUtils';
-
 import Toolbar from './components/Toolbar';
+import ImageGrid from './components/ImageGrid';
 
 export default class App extends React.Component {
   state = {
@@ -101,8 +103,30 @@ export default class App extends React.Component {
   }
 
   handlePressToolbarLocation = () => {
-    // ...
-  }
+    const { messages } = this.state;
+
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Permission to access location was denied');
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      console.log(location);
+
+      const { coords: { latitude, longitude } } = location;
+      this.setState({
+        messages: [
+          createLocationMessage({
+            latitude,
+            longitude,
+          }),
+          ...messages,
+        ],
+      });
+    })();
+  };
 
   handleChangeFocus = (isFocused) => {
     this.setState({ isInputFocused: isFocused });
@@ -127,11 +151,11 @@ export default class App extends React.Component {
     );
   }
 
-  renderInputMethodEditor() {
-    return (
-      <View style={styles.inputMethodEditor}></View>
-    );
-  }
+  renderInputMethodEditor = () => (
+    <View style={styles.inputMethodEditor}>
+      <ImageGrid />
+    </View>
+  );
 
   renderToolbar() {
     const { isInputFocused } = this.state;
